@@ -1,0 +1,127 @@
+{% extends './layout.html'%}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" href="{% static 'app/weather.css'%}">
+<script src="https://cdn.plot.ly/plotly-3.2.0.min.js" charset="utf-8"></script>
+<link rel="stylesheet" href="{% static 'app/weather.css' %}">
+{% endblock head %}
+
+{% block body%}
+<div class="big-container">
+    <div class="leftcontent">
+        <div class="currentTempt">
+            <div>
+                <p class="temperature"></p>
+            </div>
+            <div class="middle-column">
+                <div class="everything-else">
+                    <p class="wind-speed"></p>
+                    <p class="rain"></p>
+                    <p class="humidity"></p>
+                </div>
+                <div class="addButton">
+                    <button class="btn btn-primary">Functional button</button>
+                </div>
+                <div class="day-showcase">
+
+                </div>
+            </div>
+        </div>
+        <nav class="tabbing-navigation justify-content-center navthingy">
+            <button class="temperatureButton btn btn-secondary">Temperature</button>
+            <button class="rainingButton btn btn-secondary">Precipitation</button>
+            <button class="windButton btn btn-secondary">Wind Speed</button>
+            <button class="humidButton btn btn-secondary">Humidity</button>
+        </nav>
+        <div class="graphing-container">
+            <div id="graphing-temperature"></div>
+            <div id="graphing-rain"></div>
+            <div id="graphing-wind"></div>
+            <div id="graphing-humid"></div>
+        </div>
+    </div>
+    <div class="sidebar">
+    
+    </div>
+</div>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const lo = '{{ longitude }}';
+            const la = '{{ latitude }}';
+            const temperatureMessage = document.querySelector('.temperature');
+            const windSpeedMessage = document.querySelector('.wind-speed');
+            const rainMessage = document.querySelector('.rain');
+            const humidMessage = document.querySelector('.humidity');
+
+            const tempBt = document.querySelector('.temperatureButton');
+            const windBt = document.querySelector('.windButton');
+            const rainBt = document.querySelector('.rainingButton');
+            const humidBt = document.querySelector('.humidButton');
+
+            const myURL = `https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,relative_humidity_2m&current=temperature_2m,wind_speed_10m,precipitation,relative_humidity_2m`
+            console.log(myURL);
+            await fetch(myURL).then(response => response.json())
+            .then(res => {
+                console.log(res);
+                temperatureMessage.innerHTML = `${res.current.temperature_2m}`
+                windSpeedMessage.innerHTML = `Wind Speed: ${res.current.wind_speed_10m} ${res.current_units.wind_speed_10m}`
+                rainMessage.innerHTML = `Precipitation: ${res.current.precipitation} ${res.current_units.precipitation}`
+                humidMessage.innerHTML = `Humidity: ${res.current.relative_humidity_2m} ${res.current_units.relative_humidity_2m}`
+                
+                const hideDivs = element => element.style.setProperty("display", "none");
+                const showDivs = element => element.style.setProperty("display", "block");
+
+                const graphingDivs = [
+                    { "temperature": document.querySelector('#graphing-temperature') },
+                    { "wind": document.querySelector('#graphing-wind') },
+                    { "rain": document.querySelector('#graphing-rain') },
+                    { "humidity": document.querySelector('#graphing-humid')}
+                ]
+                for (let i = 0; i < graphingDivs.length; i++) {
+                    let yArray;
+                    const [key, value] = Object.entries(graphingDivs[i])[0]
+                    console.log(key, value)
+                    const xArray = res.hourly.time;
+                    switch (key) {
+                        case "temperature": yArray = res.hourly.temperature_2m; break;
+                        case "rain": yArray = res.hourly.precipitation; break;
+                        case "wind": yArray = res.hourly.wind_speed_10m; break;
+                        case "humidity": yArray = res.hourly.relative_humidity_2m; break;
+                    }
+                    const data = [{x: xArray, y: yArray, mode: "lines", type: "scatter"}];
+                    const layout = { xaxis: {title: "Time"}, yaxis: {title: key}, title: `${key} graph`, };
+                    Plotly.newPlot(value, data, layout);
+                }
+                hideDivs(document.querySelector('#graphing-wind'))
+                hideDivs(document.querySelector('#graphing-rain'))
+                hideDivs(document.querySelector('#graphing-humid'))
+                tempBt.addEventListener('click', () => {
+                    hideDivs(document.querySelector('#graphing-wind'))
+                    hideDivs(document.querySelector('#graphing-rain'))
+                    hideDivs(document.querySelector('#graphing-humid'))
+                    showDivs(document.querySelector('#graphing-temperature'))
+                })
+                windBt.addEventListener('click', () => {
+                    hideDivs(document.querySelector('#graphing-rain'))
+                    hideDivs(document.querySelector('#graphing-temperature'))
+                    hideDivs(document.querySelector('#graphing-humid'))
+                    showDivs(document.querySelector('#graphing-wind'))
+                })
+                rainBt.addEventListener('click', () => {
+                    hideDivs(document.querySelector('#graphing-wind'))
+                    hideDivs(document.querySelector('#graphing-temperature'))
+                    hideDivs(document.querySelector('#graphing-humid'))
+                    showDivs(document.querySelector('#graphing-rain'))
+                })
+                humidBt.addEventListener('click', () => {
+                    hideDivs(document.querySelector('#graphing-wind'))
+                    hideDivs(document.querySelector('#graphing-temperature'))
+                    hideDivs(document.querySelector('#graphing-rain'))
+                    showDivs(document.querySelector('#graphing-humid'))
+                })
+
+            })
+            .catch(err => {throw err})
+        })
+    </script>
+{% endblock body%}

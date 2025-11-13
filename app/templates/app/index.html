@@ -1,0 +1,97 @@
+{% extends "./layout.html" %}
+{% load static %}
+
+{% block head %}
+    <script>
+        const myDataURL = "{% static 'data/data.json' %}";
+        document.addEventListener('DOMContentLoaded', async () => {
+            const countriesSelectionElement = document.querySelector('.countries');
+            const citySelectionElement = document.querySelector('.cities');
+            const currentLocation = document.querySelector('.location');
+            const submitButtonElement = document.querySelector('.mahOwnSubmitButton');
+
+            const allTehCountries = await fetch(myDataURL)
+            .then(res => res.json())
+            .then(result => {
+                const allMahCountries = result.data.map(item => item.country)
+                for (let i = 0; i < allMahCountries.length; i++) {
+                    const newOption = document.createElement('option');
+                    newOption.setAttribute('value', allMahCountries[i]);
+                    newOption.innerHTML = `${allMahCountries[i]}`;
+                    countriesSelectionElement.appendChild(newOption);
+                }
+            })
+
+            countriesSelectionElement.addEventListener('change', async () => {
+                const myCountry = countriesSelectionElement.value;
+                const allTehCountries = await fetch(myDataURL)
+                .then(res => res.json())
+                .then(result => {
+                    const cityObject = result.data.find(item => item.country === myCountry);
+                    const allMahCities = cityObject.cities;
+                    citySelectionElement.disabled = false;
+                    for (let i = 0; i < allMahCities.length; i++) {
+                        const newOption = document.createElement('option');
+                        newOption.setAttribute('value', allMahCities[i]);
+                        newOption.innerHTML = `${allMahCities[i]}`;
+                        citySelectionElement.appendChild(newOption);
+                    }
+                    console.log(myCountry);
+                    countriesSelectionElement.disabled = true;
+                })
+            })
+
+            citySelectionElement.addEventListener('change', async () => {
+                const myCity = citySelectionElement.value;
+                console.log(myCity);
+                const mahAddress = encodeURIComponent(citySelectionElement.value);
+                const url = `https://geocode.maps.co/search?q=${mahAddress}&api_key=690932918e5b4509288392snjaca946`;
+                await fetch(url).then(result => result.json())
+                .then(res => () => {
+                    console.log('im suppose to print off something...')
+                    console.log(res);
+                })
+                .catch(err => {throw err});
+            })
+        })
+    </script>
+    <link rel="stylesheet" href="{% static 'app/index.css'%}">
+{% endblock head %}
+
+{% block body %}
+    <h1 class="h1">The Weather Dude.</h1>
+    <div class="heading-and-form-container">
+        <div class="heading-and-paragraph-container">
+            <h2 class="h2">
+                <small class="text-muted">The dude who knows the weather.</small>
+            </h2>
+            <div class="landing-paragraph">
+                <p>The Weather Dude makes checking the weather fun, simple, and reliable — because you deserve more than just a boring forecast.</p>
+            </div>
+            <div class="landing-paragraph">
+                <p>cause he knows.</p>
+            </div>
+            <div>
+                <button class="get-your-button btn btn-primary">Get the weather at your location</button>
+            </div>
+        </div>
+        <div class="form-container">
+            <form action="" class="">
+                <div class="col mb-3 selection">
+                    <select id="" class="countries form-select">
+                        <option value="first">Choose your country:</option>
+                    </select>
+                </div>
+                <div class="col mb-3 selection">
+                    <select class="cities form-select" disabled>
+                        <option value="second">Choose your city: </option>
+                    </select>
+                </div>
+                <div class="mb-3 col selection">
+                    <input type="submit" value="Submit" class="btn btn-primary mahOwnSubmitButton">
+                </div>
+            </form>
+            <img src="{% static 'app/1555512.png' %}" alt="cloud-icon" width="150" height="180" class="cloud-image">
+        </div>
+    </div>
+{% endblock body %}
