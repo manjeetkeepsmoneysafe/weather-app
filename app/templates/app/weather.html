@@ -3,7 +3,6 @@
 {% block head %}
 <link rel="stylesheet" href="{% static 'app/weather.css'%}">
 <script src="https://cdn.plot.ly/plotly-3.2.0.min.js" charset="utf-8"></script>
-<link rel="stylesheet" href="{% static 'app/weather.css' %}">
 {% endblock head %}
 
 {% block body%}
@@ -23,7 +22,7 @@
                     <button class="btn btn-primary">Functional button</button>
                 </div>
                 <div class="day-showcase">
-
+                    
                 </div>
             </div>
         </div>
@@ -40,9 +39,7 @@
             <div id="graphing-humid"></div>
         </div>
     </div>
-    <div class="sidebar">
-    
-    </div>
+    <div class="sidebar"></div>
 </div>
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
@@ -57,6 +54,10 @@
             const windBt = document.querySelector('.windButton');
             const rainBt = document.querySelector('.rainingButton');
             const humidBt = document.querySelector('.humidButton');
+
+            const dayShowcasing = document.querySelector('.day-showcase');
+            const getDate = new Date();
+            dayShowcasing.innerHTML = `${getDate}`;
 
             const myURL = `https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,relative_humidity_2m&current=temperature_2m,wind_speed_10m,precipitation,relative_humidity_2m`
             console.log(myURL);

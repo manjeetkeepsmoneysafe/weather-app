@@ -37,3 +37,6 @@
 .middle-column > p {
     margin-bottom: 0px;
 }
+.graphing-container{
+    display: flex;
+}
