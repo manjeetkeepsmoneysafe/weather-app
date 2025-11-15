@@ -12,6 +12,15 @@
                 const data = await fetch(dataUrl).then(res => res.text()).catch(err => console.error(err));
                 const array = data.split(",")
                 console.log(array)
+
+                for (let i = 0; i <array.length; i++) {
+                    const newElement = document.createElement('option')
+                    newElement.value = array[i]
+                    console.log(array[i])
+                    newElement.innerHTML = array[i]
+                    countriesSelect.appendChild(newElement)
+                }
+                document.querySelector('.cities').disabled = false
             });
         })
     </script>
