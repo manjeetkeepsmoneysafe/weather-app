@@ -5,23 +5,46 @@
     <script>
         document.addEventListener('DOMContentLoaded', async () => {
             const countriesSelect = document.querySelector('#countriesSelection');
+            const citiesSelection = document.querySelector('.cities');
+            const selectionForm = document.querySelector('.selectionForm');
+            const thisLocation = document.querySelector('.thisLocation');
             countriesSelect.addEventListener('change', async function () {
                 // const myUrl = dataUrl +  `?country=${this.value}`;
                 const dataUrl = `{% url 'countries' %}?country=${this.value}`;
-                console.log(dataUrl);
+                console.log(dataUrl)
                 const data = await fetch(dataUrl).then(res => res.text()).catch(err => console.error(err));
                 const array = data.split(",")
                 console.log(array)
-
-                for (let i = 0; i <array.length; i++) {
-                    const newElement = document.createElement('option')
-                    newElement.value = array[i]
-                    console.log(array[i])
+                citiesSelection.disabled = false;
+                for (let i  = 0; i < array.length; i++) {
+                    const newElement = document.createElement('option');
                     newElement.innerHTML = array[i]
-                    countriesSelect.appendChild(newElement)
+                    newElement.value = array[i]
+                    citiesSelection.appendChild(newElement)
                 }
-                document.querySelector('.cities').disabled = false
             });
+            selectionForm.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const urlCrafting = `{% url 'countries' %}?country=${countriesSelect.value}&city=${citiesSelection.value}`;
+                console.log(urlCrafting);
+                const longAndLatData = await fetch(urlCrafting).then(res => res.json());
+                console.log(longAndLatData);
+                console.log(`{% url "weather"%}?long=${longAndLatData[0]}&lat=${longAndLatData[1]}`)
+                
+                // Taking the user to weather page
+                window.location.href = `{% url "weather"%}?long=${longAndLatData[0]}&lat=${longAndLatData[1]}`
+            })
+            thisLocation.addEventListener('submit', async (event) => {
+                event.preventDefault()
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        console.log(position.coords.latitude, position.coords.longitude)
+                        window.location.href = `{% url "weather"%}?long=${position.coords.longitude}&lat=${position.coords.latitude}`
+                    }, () => {alert('Pls give me your location')});
+                } else {
+                    alert('Pls give me your location')
+                }
+            })
         })
     </script>
 
@@ -42,12 +65,13 @@
                 <p>cause he knows.</p>
             </div>
             <div>
-                <button class="get-your-button btn btn-primary" type="submit">Get the weather at your location</button>
+                <form class="thisLocation">
+                    <button class="get-your-button btn btn-primary" type="submit">Get the weather at your location</button>
+                </form>
             </div>
         </div>
         <div class="form-container">
-            <form action="" class="">
-                {% csrf_token %}
+            <form class="selectionForm">
                 <div class="col mb-3 selection">
                     <select id="countriesSelection" class="form-select">
                         <option value="first">Choose your country:</option>
@@ -62,7 +86,7 @@
                     </select>
                 </div>
                 <div class="mb-3 col selection">
-                    <input type="submit" value="Submit" class="btn btn-primary mahOwnSubmitButton" onsubmit="getLocation">
+                    <input type="submit" value="Submit" class="btn btn-primary mahOwnSubmitButton">
                 </div>
             </form>
             <img src="{% static 'app/1555512.png' %}" alt="cloud-icon" width="150" height="180" class="cloud-image">

@@ -4,7 +4,6 @@ from django.http import JsonResponse, HttpResponse
 
 # Create your views here.
 def index(request):
-    print(Data.objects.values_list('city', 'country'))
     cityData = Data.objects.values_list('city')
     countryData = Data.objects.values_list('country')
 
@@ -34,10 +33,13 @@ def weather(request):
 
 def countries(request):
     country = request.GET.get("country")
-    myData = Data.objects.filter(country=country)
-    v = ",".join(i.city for i in myData)
-
-   
-    result = v
-    print(result)
-    return JsonResponse(result, safe=False)
+    if request.GET.get("city") is None:
+        myData = Data.objects.filter(country=country)
+        v = ",".join(i.city for i in myData)
+        print("Hello im here")
+        return JsonResponse(v, safe=False)
+    else:
+        city = request.GET.get("city")
+        myData = Data.objects.filter(country=country, city=city)
+        v, n = myData.first().long, myData.first().lati
+        return JsonResponse((v, n), safe=False)

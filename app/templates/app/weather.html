@@ -6,24 +6,30 @@
 {% endblock head %}
 
 {% block body%}
-<div class="big-container">
+<div class="loadingScreen spinner-border" role="status">
+    <span class="sr-only"></span>
+</div>
+<div class="big-container" style="display: none;">
     <div class="leftcontent">
         <div class="currentTempt">
             <div>
                 <p class="temperature"></p>
             </div>
             <div class="middle-column">
-                <div class="everything-else">
-                    <p class="wind-speed"></p>
-                    <p class="rain"></p>
-                    <p class="humidity"></p>
+                <div>
+                    <div class="everything-else">
+                        <p class="wind-speed"></p>
+                        <p class="rain"></p>
+                        <p class="humidity"></p>
+                    </div>
+                    <div class="addButton">
+                        <button class="btn btn-primary addtoDBButton">Save location</button>
+                    </div>
                 </div>
-                <div class="addButton">
-                    <button class="btn btn-primary">Functional button</button>
-                </div>
-                <div class="day-showcase">
-                    
-                </div>
+            </div>
+            <div>
+                <div class="day-showcase" style="font-size: 25px; padding-left: 40px;"></div><br>
+                <div class="location" style="font-size: 25px; padding-left: 40px;"></div>
             </div>
         </div>
         <nav class="tabbing-navigation justify-content-center navthingy">
@@ -42,9 +48,11 @@
     <div class="sidebar"></div>
 </div>
     <script>
-        document.addEventListener('DOMContentLoaded', async () => {
+        const loaded = new Promise(async function(resolved, reject) {
             const lo = '{{ longitude }}';
             const la = '{{ latitude }}';
+            let weatherFlag = false;
+            let addressFlag = false
             const temperatureMessage = document.querySelector('.temperature');
             const windSpeedMessage = document.querySelector('.wind-speed');
             const rainMessage = document.querySelector('.rain');
@@ -56,15 +64,23 @@
             const humidBt = document.querySelector('.humidButton');
 
             const dayShowcasing = document.querySelector('.day-showcase');
-            const getDate = new Date();
-            dayShowcasing.innerHTML = `${getDate}`;
+            const date = new Date()
+            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+            const dayName = days[date.getDay()];
+            const dayOfMonth = date.getDate();
+            const monthName = months[date.getMonth()];
+
+            const formatted = `${dayName}, ${dayOfMonth} of ${monthName}.`;
+            dayShowcasing.innerHTML = formatted
 
             const myURL = `https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,relative_humidity_2m&current=temperature_2m,wind_speed_10m,precipitation,relative_humidity_2m`
             console.log(myURL);
             await fetch(myURL).then(response => response.json())
             .then(res => {
                 console.log(res);
-                temperatureMessage.innerHTML = `${res.current.temperature_2m}`
+                temperatureMessage.innerHTML = `${res.current.temperature_2m} ${res.current_units.temperature_2m}`
                 windSpeedMessage.innerHTML = `Wind Speed: ${res.current.wind_speed_10m} ${res.current_units.wind_speed_10m}`
                 rainMessage.innerHTML = `Precipitation: ${res.current.precipitation} ${res.current_units.precipitation}`
                 humidMessage.innerHTML = `Humidity: ${res.current.relative_humidity_2m} ${res.current_units.relative_humidity_2m}`
@@ -81,7 +97,6 @@
                 for (let i = 0; i < graphingDivs.length; i++) {
                     let yArray;
                     const [key, value] = Object.entries(graphingDivs[i])[0]
-                    console.log(key, value)
                     const xArray = res.hourly.time;
                     switch (key) {
                         case "temperature": yArray = res.hourly.temperature_2m; break;
@@ -90,7 +105,7 @@
                         case "humidity": yArray = res.hourly.relative_humidity_2m; break;
                     }
                     const data = [{x: xArray, y: yArray, mode: "lines", type: "scatter"}];
-                    const layout = { xaxis: {title: "Time"}, yaxis: {title: key}, title: `${key} graph`, };
+                    const layout = { xaxis: {title: {text: "Time"}}, yaxis: {title: {text: key}}, title: {text: `${key} graph`} };
                     Plotly.newPlot(value, data, layout);
                 }
                 hideDivs(document.querySelector('#graphing-wind'))
@@ -120,9 +135,23 @@
                     hideDivs(document.querySelector('#graphing-rain'))
                     showDivs(document.querySelector('#graphing-humid'))
                 })
-
+                weatherFlag = true;
             })
             .catch(err => {throw err})
-        })
+            const locationElement = document.querySelector('.location')
+            const address = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${la}&longitude=${lo}&localityLanguage=en`)
+            .then(res => res.json())
+            .then(response => {
+                console.log(response); 
+                locationElement.innerHTML = `${response.city}, ${response.countryName}`
+                addressFlag = true;
+            })
+            if (weatherFlag && addressFlag) resolved();
+        }).then(
+            () => {
+                document.querySelector('.loadingScreen').style.display = 'none';
+                document.querySelector('.big-container').style.display = 'block'
+            }
+        )
     </script>
 {% endblock body%}
