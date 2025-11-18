@@ -1,5 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.contrib.auth.models import AbstractUser
+from datetime import datetime
+from django import forms
 
 # Create your models here.
 class Data(models.Model):
@@ -13,3 +16,10 @@ class Person(models.Model):
     password = models.CharField(max_length=100, default="")
     plong = models.ManyToManyField(Data, related_name="person_longitude")
     plati = models.ManyToManyField(Data, related_name="person_latitude")
+
+class HistoryData(models.Model):
+    weatherInfo = models.JSONField(default=dict)
+    date = models.DateTimeField(default=datetime.now)
+
+class User(AbstractUser):
+    data = models.ManyToManyField(HistoryData)

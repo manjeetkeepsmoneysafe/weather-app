@@ -20,6 +20,7 @@
 <body>
     <nav class="navbar navbar-expand-lg bg-body-tertiary">
         <a href="{% url 'index'%}" class="navbar-brand">Dude</a>
+        {% block nav%}{% endblock nav%}
     </nav>
     <div class="body">
         {% block body %} 

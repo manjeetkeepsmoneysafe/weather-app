@@ -23,7 +23,9 @@
                         <p class="humidity"></p>
                     </div>
                     <div class="addButton">
-                        <button class="btn btn-primary addtoDBButton">Save location</button>
+                        <form action="{% url 'save'%}" method="POST">
+                            <button class="btn btn-primary addtoDBButton" type="submit">Save location</button>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -57,12 +59,11 @@
             const windSpeedMessage = document.querySelector('.wind-speed');
             const rainMessage = document.querySelector('.rain');
             const humidMessage = document.querySelector('.humidity');
-
             const tempBt = document.querySelector('.temperatureButton');
             const windBt = document.querySelector('.windButton');
             const rainBt = document.querySelector('.rainingButton');
             const humidBt = document.querySelector('.humidButton');
-
+            const saveElement = document.querySelector('.add');
             const dayShowcasing = document.querySelector('.day-showcase');
             const date = new Date()
             const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -80,6 +81,12 @@
             await fetch(myURL).then(response => response.json())
             .then(res => {
                 console.log(res);
+                saveElement.addEventListener('save', async (event) => {
+                    const mahRes = await fetch("{% url 'save'%}",{
+                        "body": res
+                    }).then(res => res.json())
+                    console.log(mahRes)
+                })
                 temperatureMessage.innerHTML = `${res.current.temperature_2m} ${res.current_units.temperature_2m}`
                 windSpeedMessage.innerHTML = `Wind Speed: ${res.current.wind_speed_10m} ${res.current_units.wind_speed_10m}`
                 rainMessage.innerHTML = `Precipitation: ${res.current.precipitation} ${res.current_units.precipitation}`
