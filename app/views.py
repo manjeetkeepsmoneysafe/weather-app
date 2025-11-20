@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth import authenticate, login, logout
-from app.models import Data, User, HistoryData
+from app.models import Data, User
 from django.http import JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -14,14 +14,29 @@ import json
 @login_required
 def save(request):
     data = json.loads(request.body)
-    makingHistoryData = HistoryData.objects.create(weatherInfo = data)
-    request.user.data.add(makingHistoryData)
+    user = User.objects.filter(username = request.user).first().data.create(weatherInfo = data)
+    user.save()
     return JsonResponse({
         "message": "Goooddd"
     })
 
+@login_required
+def delete(request):
+    data = json.loads(request.body)
+    user = User.objects.filter(username = request.user).first().data.delete(weatherInfo = data)
+    user.save()
+    return JsonResponse({
+        "message": "Gooood"
+    })
+
+
+@login_required
+def past(request):
+    pass
+
 def loginView(request):
     if request.method == "POST":
+        print(request.POST)
         username = request.POST["username"]
         password = request.POST["password"]
         user = authenticate(request, username=username, password=password)
@@ -94,7 +109,6 @@ def countries(request):
     if request.GET.get("city") is None:
         myData = Data.objects.filter(country=country)
         v = ",".join(i.city for i in myData)
-        print("Hello im here")
         return JsonResponse(v, safe=False)
     else:
         city = request.GET.get("city")

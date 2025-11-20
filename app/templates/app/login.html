@@ -1,17 +1,9 @@
 {% extends './layout.html'%}
 {% load static %}
 
-
-{% block nav%}
-
-{% if user.is_authenticated %}
-<a href="{% url 'logout'%}">Log Out</a>
-<p>Hello {{user.username}}</p>
-{% else %}
-<a href="{% url 'create'%}">Create new user</a>
-{% endif%}
-{% endblock nav%}
-
+{% block head %}
+<link rel="stylesheet" href="{% static 'app/login.css'%}">
+{% endblock%}
 
 {% block body %}
 {% if user.is_authenticated %}
@@ -20,9 +12,15 @@
 {% else %}
 <form action="{% url 'login'%}" method="POST">
     {% csrf_token %}
-    <input type="text" name="username" placeholder="Enter your username: ">
-    <input type="password" name="password" placeholder="Enter your password:">
-    <input type="submit">
+    <div class="mb-3 mx-auto container-fluid">
+        <div>
+            <input type="text" name="username" placeholder="Enter your username: " class="form-control">
+        </div>
+        <div>
+            <input type="password" name="password" placeholder="Enter your password:" class="form-control">
+        </div>
+        <input type="submit" class="btn btn-primary">
+    </div>
 </form>
 {% endif%}
 {% endblock body%}

@@ -1,5 +1,6 @@
 {% extends './layout.html'%}
 {% load static %}
+
 {% block head %}
 <link rel="stylesheet" href="{% static 'app/weather.css'%}">
 <script src="https://cdn.plot.ly/plotly-3.2.0.min.js" charset="utf-8"></script>
@@ -9,7 +10,7 @@
 <div class="loadingScreen spinner-border" role="status">
     <span class="sr-only"></span>
 </div>
-<div class="big-container" style="display: none;">
+<div class="big-container">
     <div class="leftcontent">
         <div class="currentTempt">
             <div>
@@ -23,15 +24,17 @@
                         <p class="humidity"></p>
                     </div>
                     <div class="addButton">
-                        <form action="{% url 'save'%}" method="POST">
+                        <form class="submitElement">
+                            {% csrf_token %}
                             <button class="btn btn-primary addtoDBButton" type="submit">Save location</button>
                         </form>
                     </div>
                 </div>
             </div>
             <div>
-                <div class="day-showcase" style="font-size: 25px; padding-left: 40px;"></div><br>
-                <div class="location" style="font-size: 25px; padding-left: 40px;"></div>
+                <div class="day-showcase" style="font-size: 20px; padding-left: 40px; display: flex;"></div><br>
+                <div class="time" style="font-size: 20px; padding-left: 40px; display: flex;"></div>
+                <div class="location" style="font-size: 20px; padding-left: 40px; display: flex;"></div>
             </div>
         </div>
         <nav class="tabbing-navigation justify-content-center navthingy">
@@ -47,118 +50,186 @@
             <div id="graphing-humid"></div>
         </div>
     </div>
-    <div class="sidebar"></div>
+    <div class="sidebar">
+        <div>
+            <h3>Your history: </h3>
+        </div>
+        <div class="options">
+            {% for i in user.data.all %}
+            <div id="blockyHistory">
+                <div class="uhhIDKwhattonamethiseither">
+                    {{ i.date }} for {{ i.weatherInfo.pleaseWorkplease.city }}, {{ i.weatherInfo.pleaseWorkplease.countryName }}
+                </div>
+                <div class="uhhIDKwhattonamethis">
+                    <button class="btn btn-danger deletingThisData"> Delete this data </button>
+                    <button class="btn btn-primary goToThisData"> Go to this data </button>
+                </div>
+            </div>
+            {% endfor%}
+        </div>
+    </div>
 </div>
-    <script>
-        const loaded = new Promise(async function(resolved, reject) {
-            const lo = '{{ longitude }}';
-            const la = '{{ latitude }}';
-            let weatherFlag = false;
-            let addressFlag = false
-            const temperatureMessage = document.querySelector('.temperature');
-            const windSpeedMessage = document.querySelector('.wind-speed');
-            const rainMessage = document.querySelector('.rain');
-            const humidMessage = document.querySelector('.humidity');
-            const tempBt = document.querySelector('.temperatureButton');
-            const windBt = document.querySelector('.windButton');
-            const rainBt = document.querySelector('.rainingButton');
-            const humidBt = document.querySelector('.humidButton');
-            const saveElement = document.querySelector('.add');
-            const dayShowcasing = document.querySelector('.day-showcase');
-            const date = new Date()
-            const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-            const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+<script>
+    const loaded = new Promise(async function(resolved, reject) {
 
-            const dayName = days[date.getDay()];
-            const dayOfMonth = date.getDate();
-            const monthName = months[date.getMonth()];
+        const lo = '{{ longitude }}';
+        const la = '{{ latitude }}';
+        let weatherFlag = false;
+        let addressFlag = false;
 
-            const formatted = `${dayName}, ${dayOfMonth} of ${monthName}.`;
-            dayShowcasing.innerHTML = formatted
+        document.querySelector('.big-container').style.display = 'none';
 
-            const myURL = `https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,relative_humidity_2m&current=temperature_2m,wind_speed_10m,precipitation,relative_humidity_2m`
-            console.log(myURL);
-            await fetch(myURL).then(response => response.json())
-            .then(res => {
-                console.log(res);
-                saveElement.addEventListener('save', async (event) => {
-                    const mahRes = await fetch("{% url 'save'%}",{
-                        "body": res
-                    }).then(res => res.json())
-                    console.log(mahRes)
-                })
-                temperatureMessage.innerHTML = `${res.current.temperature_2m} ${res.current_units.temperature_2m}`
-                windSpeedMessage.innerHTML = `Wind Speed: ${res.current.wind_speed_10m} ${res.current_units.wind_speed_10m}`
-                rainMessage.innerHTML = `Precipitation: ${res.current.precipitation} ${res.current_units.precipitation}`
-                humidMessage.innerHTML = `Humidity: ${res.current.relative_humidity_2m} ${res.current_units.relative_humidity_2m}`
-                
-                const hideDivs = element => element.style.setProperty("display", "none");
-                const showDivs = element => element.style.setProperty("display", "block");
+        const temperatureMessage = document.querySelector('.temperature');
+        const windSpeedMessage = document.querySelector('.wind-speed');
+        const rainMessage = document.querySelector('.rain');
+        const humidMessage = document.querySelector('.humidity');
+        const tempBt = document.querySelector('.temperatureButton');
+        const windBt = document.querySelector('.windButton');
+        const options = document.querySelector('.options');
+        const optionElements = options.children;
+        console.log(optionElements)
+        
+        for (let i = 0; i < optionElements.length; i++) {
+            console.log(optionElements[i]);
+            const optionElementsElements = optionElements[i].children[1];
+            
+            optionElementsElements[0].addEventListener('click', async (event) => {
 
-                const graphingDivs = [
-                    { "temperature": document.querySelector('#graphing-temperature') },
-                    { "wind": document.querySelector('#graphing-wind') },
-                    { "rain": document.querySelector('#graphing-rain') },
-                    { "humidity": document.querySelector('#graphing-humid')}
-                ]
-                for (let i = 0; i < graphingDivs.length; i++) {
-                    let yArray;
-                    const [key, value] = Object.entries(graphingDivs[i])[0]
-                    const xArray = res.hourly.time;
-                    switch (key) {
-                        case "temperature": yArray = res.hourly.temperature_2m; break;
-                        case "rain": yArray = res.hourly.precipitation; break;
-                        case "wind": yArray = res.hourly.wind_speed_10m; break;
-                        case "humidity": yArray = res.hourly.relative_humidity_2m; break;
-                    }
-                    const data = [{x: xArray, y: yArray, mode: "lines", type: "scatter"}];
-                    const layout = { xaxis: {title: {text: "Time"}}, yaxis: {title: {text: key}}, title: {text: `${key} graph`} };
-                    Plotly.newPlot(value, data, layout);
+            })
+            optionElementsElements[1].addEventListener('click', async (event) => {
+
+            })
+
+        }
+
+        const rainBt = document.querySelector('.rainingButton');
+        const humidBt = document.querySelector('.humidButton');
+        const saveElement = document.querySelector('.add');
+        const dayShowcasing = document.querySelector('.day-showcase');
+        const timeElement = document.querySelector('.time');
+        const submitElement = document.querySelector('.submitElement');
+        const locationElement = document.querySelector('.location')
+        const date = new Date()
+        const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+        const dayName = days[date.getDay()];
+        const dayOfMonth = date.getDate();
+        const monthName = months[date.getMonth()];
+        const time = date.toLocaleTimeString()
+
+        const formatted = `${dayName}, ${dayOfMonth} of ${monthName}.`;
+        dayShowcasing.innerHTML = formatted
+        timeElement.innerHTML = time
+
+        const myURL = `https://api.open-meteo.com/v1/forecast?latitude=${la}&longitude=${lo}&hourly=temperature_2m,precipitation_probability,wind_speed_10m,relative_humidity_2m&current=temperature_2m,wind_speed_10m,precipitation,relative_humidity_2m`
+        const info = await fetch(myURL).then(response => response.json())
+        .then(res => {
+            console.log(res);
+
+            weatherFlag = true;
+            temperatureMessage.innerHTML = `${res.current.temperature_2m}${res.current_units.temperature_2m}`
+            windSpeedMessage.innerHTML = `Wind Speed: ${res.current.wind_speed_10m} ${res.current_units.wind_speed_10m}`
+            rainMessage.innerHTML = `Precipitation: ${res.current.precipitation} ${res.current_units.precipitation}`
+            humidMessage.innerHTML = `Humidity: ${res.current.relative_humidity_2m} ${res.current_units.relative_humidity_2m}`
+            
+            const hideDivs = element => element.style.setProperty("display", "none");
+            const showDivs = element => element.style.setProperty("display", "block");
+
+            const graphingDivs = [
+                { "temperature": document.querySelector('#graphing-temperature') },
+                { "wind": document.querySelector('#graphing-wind') },
+                { "rain": document.querySelector('#graphing-rain') },
+                { "humidity": document.querySelector('#graphing-humid')}
+            ]
+            for (let i = 0; i < graphingDivs.length; i++) {
+                let yArray;
+                const [key, value] = Object.entries(graphingDivs[i])[0]
+                const xArray = res.hourly.time;
+                switch (key) {
+                    case "temperature": yArray = res.hourly.temperature_2m; break;
+                    case "rain": yArray = res.hourly.precipitation; break;
+                    case "wind": yArray = res.hourly.wind_speed_10m; break;
+                    case "humidity": yArray = res.hourly.relative_humidity_2m; break;
                 }
+                const data = [{x: xArray, y: yArray, mode: "lines", type: "scatter"}];
+                const layout = { xaxis: {title: {text: "Time"}}, yaxis: {title: {text: key}}, title: {text: `${key} graph`} };
+                Plotly.newPlot(value, data, layout);
+            }
+            hideDivs(document.querySelector('#graphing-wind'))
+            hideDivs(document.querySelector('#graphing-rain'))
+            hideDivs(document.querySelector('#graphing-humid'))
+            tempBt.addEventListener('click', () => {
                 hideDivs(document.querySelector('#graphing-wind'))
                 hideDivs(document.querySelector('#graphing-rain'))
                 hideDivs(document.querySelector('#graphing-humid'))
-                tempBt.addEventListener('click', () => {
-                    hideDivs(document.querySelector('#graphing-wind'))
-                    hideDivs(document.querySelector('#graphing-rain'))
-                    hideDivs(document.querySelector('#graphing-humid'))
-                    showDivs(document.querySelector('#graphing-temperature'))
-                })
-                windBt.addEventListener('click', () => {
-                    hideDivs(document.querySelector('#graphing-rain'))
-                    hideDivs(document.querySelector('#graphing-temperature'))
-                    hideDivs(document.querySelector('#graphing-humid'))
-                    showDivs(document.querySelector('#graphing-wind'))
-                })
-                rainBt.addEventListener('click', () => {
-                    hideDivs(document.querySelector('#graphing-wind'))
-                    hideDivs(document.querySelector('#graphing-temperature'))
-                    hideDivs(document.querySelector('#graphing-humid'))
-                    showDivs(document.querySelector('#graphing-rain'))
-                })
-                humidBt.addEventListener('click', () => {
-                    hideDivs(document.querySelector('#graphing-wind'))
-                    hideDivs(document.querySelector('#graphing-temperature'))
-                    hideDivs(document.querySelector('#graphing-rain'))
-                    showDivs(document.querySelector('#graphing-humid'))
-                })
-                weatherFlag = true;
+                showDivs(document.querySelector('#graphing-temperature'))
             })
-            .catch(err => {throw err})
-            const locationElement = document.querySelector('.location')
-            const address = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${la}&longitude=${lo}&localityLanguage=en`)
-            .then(res => res.json())
-            .then(response => {
-                console.log(response); 
-                locationElement.innerHTML = `${response.city}, ${response.countryName}`
-                addressFlag = true;
+            windBt.addEventListener('click', () => {
+                hideDivs(document.querySelector('#graphing-rain'))
+                hideDivs(document.querySelector('#graphing-temperature'))
+                hideDivs(document.querySelector('#graphing-humid'))
+                showDivs(document.querySelector('#graphing-wind'))
             })
-            if (weatherFlag && addressFlag) resolved();
-        }).then(
-            () => {
-                document.querySelector('.loadingScreen').style.display = 'none';
-                document.querySelector('.big-container').style.display = 'block'
-            }
-        )
-    </script>
+            rainBt.addEventListener('click', () => {
+                hideDivs(document.querySelector('#graphing-wind'))
+                hideDivs(document.querySelector('#graphing-temperature'))
+                hideDivs(document.querySelector('#graphing-humid'))
+                showDivs(document.querySelector('#graphing-rain'))
+            })
+            humidBt.addEventListener('click', () => {
+                hideDivs(document.querySelector('#graphing-wind'))
+                hideDivs(document.querySelector('#graphing-temperature'))
+                hideDivs(document.querySelector('#graphing-rain'))
+                showDivs(document.querySelector('#graphing-humid'))
+            })
+            return res.json
+            
+        })
+        .catch(err => {throw err})
+        const address = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${la}&longitude=${lo}&localityLanguage=en`)
+        .then(res => res.json())
+        .then(response => {
+            console.log(response); 
+            locationElement.innerHTML = `${response.city}, ${response.countryName}`;
+            addressFlag = true;
+        })
+
+        // django csrf doc
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                        }
+                    }
+                }
+        return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+        submitElement.addEventListener('submit', async (event) => {
+            event.preventDefault()
+            const MAHHinfo = await fetch("{% url 'save' %}", {
+                method:"POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrftoken,
+                },
+                body: JSON.stringify({plsWorkpls: info}, {pleaseWorkplease: address}),
+            }).then (res => res.text())
+            console.log(MAHHinfo)
+        })
+        
+        if (weatherFlag && addressFlag) resolved();
+    }).then(
+        () => {
+            document.querySelector('.loadingScreen').style.display = 'none'
+            document.querySelector('.big-container').style.display = 'flex'
+        }
+    )
+</script>
 {% endblock body%}

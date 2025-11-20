@@ -1,0 +1,25 @@
+{% extends './layout.html' %}
+{% load static %}
+
+{% block head %}
+<script>
+    document.addEventListener('DOMContentLoaded', async () => {
+
+        async function getLocation(longitude, latitude) {
+            const location = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
+            .then(res => res.json())
+            console.log(location)
+        }
+    })
+</script>
+{% endblock head %}
+
+{% block body %}
+{% for i in data %}
+<div>
+    <p>{{i.date.isoformat}} at {{i.weatherInfo.plsWorkpls.latitude}} and {{i.weatherInfo.plsWorkpls.longitude}}</p>
+</div>
+
+{% endfor %}
+
+{% endblock body%}

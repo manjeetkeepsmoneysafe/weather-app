@@ -50,11 +50,6 @@
     <link rel="stylesheet" href="{% static 'app/index.css'%}">
 {% endblock head %}
 
-{% block nav%}
-<p>Hello, {{ user.username}}</p>
-<a href="{% url 'logout'%}">Log out</a>
-{% endblock%}
-
 {% block body %}
     <h1 class="h1">The Weather Dude.</h1>
     <div class="heading-and-form-container">
@@ -95,12 +90,5 @@
             </form>
             <img src="{% static 'app/1555512.png' %}" alt="cloud-icon" width="150" height="180" class="cloud-image">
         </div>
-    </div>
-    <div>
-        Your data:
-        {% if user.data%}
-        {% else %}
-        <p>You have no data! Please make some data so that your data shows here!></p>
-        {% endif %}
     </div>
 {% endblock body %}

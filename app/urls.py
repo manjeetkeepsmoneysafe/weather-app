@@ -8,5 +8,6 @@ urlpatterns = [
     path("login/", views.loginView, name="login"),
     path("create/", views.createuser, name="create"),
     path("logout/", views.logoutView, name="logout"),
-    path("save/", views.save, name="save")
+    path("save/", views.save, name="save"),
+    path("past/", views.past, name="past")
 ]

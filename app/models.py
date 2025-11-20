@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.contrib.auth.models import AbstractUser
 from datetime import datetime
-from django import forms
 
 # Create your models here.
 class Data(models.Model):
