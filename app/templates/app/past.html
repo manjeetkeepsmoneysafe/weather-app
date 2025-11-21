@@ -1,25 +1,219 @@
-{% extends './layout.html' %}
+{% extends './layout.html'%}
 {% load static %}
 
 {% block head %}
-<script>
-    document.addEventListener('DOMContentLoaded', async () => {
-
-        async function getLocation(longitude, latitude) {
-            const location = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
-            .then(res => res.json())
-            console.log(location)
-        }
-    })
-</script>
+<link rel="stylesheet" href="{% static 'app/past.css'%}">
+<script src="https://cdn.plot.ly/plotly-3.2.0.min.js" charset="utf-8"></script>
 {% endblock head %}
 
-{% block body %}
-{% for i in data %}
-<div>
-    <p>{{i.date.isoformat}} at {{i.weatherInfo.plsWorkpls.latitude}} and {{i.weatherInfo.plsWorkpls.longitude}}</p>
+{% block body%}
+<div class="loadingScreen spinner-border" role="status">
+    <span class="sr-only"></span>
 </div>
+<div class="big-container">
+    <div class="leftcontent">
+        <div class="currentTempt">
+            <div>
+                <p class="temperature"></p>
+            </div>
+            <div class="middle-column">
+                <div>
+                    <div class="everything-else">
+                        <p class="wind-speed"></p>
+                        <p class="rain"></p>
+                        <p class="humidity"></p>
+                    </div>
+                    <div class="addButton">
+                       <a class="btn btn-primary" href="{% url 'index' %}">Go back to home page</a>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <div class="day-showcase" style="font-size: 20px; padding-left: 40px; display: flex;"></div><br>
+                <div class="time" style="font-size: 20px; padding-left: 40px; display: flex;"></div>
+                <div class="location" style="font-size: 20px; padding-left: 40px; display: flex;"></div>
+            </div>
+        </div>
+        <nav class="tabbing-navigation justify-content-center navthingy">
+            <button class="temperatureButton btn btn-secondary">Temperature</button>
+            <button class="rainingButton btn btn-secondary">Precipitation</button>
+            <button class="windButton btn btn-secondary">Wind Speed</button>
+            <button class="humidButton btn btn-secondary">Humidity</button>
+        </nav>
+        <div class="graphing-container">
+            <div id="graphing-temperature"></div>
+            <div id="graphing-rain"></div>
+            <div id="graphing-wind"></div>
+            <div id="graphing-humid"></div>
+        </div>
+    </div>
+    <div class="sidebar">
+        <div>
+            <h3>Your history: </h3>
+        </div>
+        <div class="options">
+            {% for i in user.data.all %}
+            <div id="blockyHistory">
+                <div class="uhhIDKwhattonamethiseither">
+                    {{ i.date }} for {{ i.weatherInfo.pleaseWorkplease.city }}, {{ i.weatherInfo.pleaseWorkplease.countryName }}
+                </div>
+                <div class="uhhIDKwhattonamethis">
+                    <div style="display: none;" class="id">{{ i.id }}</div>
+                    <button class="btn btn-danger deletingThisData" onclick="deletingData(event, this)"> Delete this data </button>
+                    <button class="btn btn-primary goToThisData" type="submit"> Go to this data </button>
+                </div>
+            </div>
+            {% endfor%}
+        </div>
+    </div>
+</div>
+<script>
 
-{% endfor %}
+    const loaded = new Promise(async function(resolved, reject) {
 
+        let data = '{{ dataSet|escapejs }}'
+        data = JSON.parse(data)
+
+
+        let weatherFlag = false;
+        let addressFlag = false;
+        let api1Value;
+        let api2Value;
+
+        document.querySelector('.big-container').style.display = 'flex';
+
+        const temperatureMessage = document.querySelector('.temperature');
+        const windSpeedMessage = document.querySelector('.wind-speed');
+        const rainMessage = document.querySelector('.rain');
+        const humidMessage = document.querySelector('.humidity');
+        const tempBt = document.querySelector('.temperatureButton');
+        const windBt = document.querySelector('.windButton');
+        const options = document.querySelector('.options');
+        
+        const rainBt = document.querySelector('.rainingButton');
+        const humidBt = document.querySelector('.humidButton');
+        const saveElement = document.querySelector('.add');
+        const dayShowcasing = document.querySelector('.day-showcase');
+        const timeElement = document.querySelector('.time');
+        const submitElement = document.querySelector('.submitElement');
+        const locationElement = document.querySelector('.location')
+
+        const formatted = '{{ date|escapejs }}'
+        dayShowcasing.innerHTML = formatted
+
+        const res = data.plsWorkpls
+
+        weatherFlag = true;
+        temperatureMessage.innerHTML = `${res.current.temperature_2m}${res.current_units.temperature_2m}`
+        windSpeedMessage.innerHTML = `Wind Speed: ${res.current.wind_speed_10m} ${res.current_units.wind_speed_10m}`
+        rainMessage.innerHTML = `Precipitation: ${res.current.precipitation} ${res.current_units.precipitation}`
+        humidMessage.innerHTML = `Humidity: ${res.current.relative_humidity_2m} ${res.current_units.relative_humidity_2m}`
+        
+        const hideDivs = element => element.style.setProperty("display", "none");
+        const showDivs = element => element.style.setProperty("display", "block");
+
+        const graphingDivs = [
+            { "temperature": document.querySelector('#graphing-temperature') },
+            { "wind": document.querySelector('#graphing-wind') },
+            { "rain": document.querySelector('#graphing-rain') },
+            { "humidity": document.querySelector('#graphing-humid')}
+        ]
+        for (let i = 0; i < graphingDivs.length; i++) {
+            let yArray;
+            const [key, value] = Object.entries(graphingDivs[i])[0]
+            const xArray = res.hourly.time;
+            switch (key) {
+                case "temperature": yArray = res.hourly.temperature_2m; break;
+                case "rain": yArray = res.hourly.precipitation; break;
+                case "wind": yArray = res.hourly.wind_speed_10m; break;
+                case "humidity": yArray = res.hourly.relative_humidity_2m; break;
+            }
+            const data = [{x: xArray, y: yArray, mode: "lines", type: "scatter"}];
+            const layout = { xaxis: {title: {text: "Time"}}, yaxis: {title: {text: key}}, title: {text: `${key} graph`} };
+            Plotly.newPlot(value, data, layout);
+        }
+        hideDivs(document.querySelector('#graphing-wind'))
+        hideDivs(document.querySelector('#graphing-rain'))
+        hideDivs(document.querySelector('#graphing-humid'))
+        tempBt.addEventListener('click', () => {
+            hideDivs(document.querySelector('#graphing-wind'))
+            hideDivs(document.querySelector('#graphing-rain'))
+            hideDivs(document.querySelector('#graphing-humid'))
+            showDivs(document.querySelector('#graphing-temperature'))
+        })
+        windBt.addEventListener('click', () => {
+            hideDivs(document.querySelector('#graphing-rain'))
+            hideDivs(document.querySelector('#graphing-temperature'))
+            hideDivs(document.querySelector('#graphing-humid'))
+            showDivs(document.querySelector('#graphing-wind'))
+        })
+        rainBt.addEventListener('click', () => {
+            hideDivs(document.querySelector('#graphing-wind'))
+            hideDivs(document.querySelector('#graphing-temperature'))
+            hideDivs(document.querySelector('#graphing-humid'))
+            showDivs(document.querySelector('#graphing-rain'))
+        })
+        humidBt.addEventListener('click', () => {
+            hideDivs(document.querySelector('#graphing-wind'))
+            hideDivs(document.querySelector('#graphing-temperature'))
+            hideDivs(document.querySelector('#graphing-rain'))
+            showDivs(document.querySelector('#graphing-humid'))
+        })
+        const response = data.pleaseWorkplease
+        locationElement.innerHTML = `${response.city}, ${response.countryName}`;
+        addressFlag = true;
+        api2Value = response
+
+        // django csrf doc
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                        }
+                    }
+                }
+        return cookieValue;
+        }
+        const csrftoken = getCookie('csrftoken');
+        const optionElements = options.children;
+
+        
+        window.deletingData = async (event, element) => {
+            const parent = element.parentElement;
+            const idElement = parent.children[0].innerHTML
+            const urlCrafting = "{% url 'delete'%}" + `?id=${idElement}`
+            console.log(urlCrafting)
+            const info = await fetch(urlCrafting, {
+                method:"POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrftoken,
+                },
+                body: idElement,
+            })
+            window.location.reload();
+        }
+
+        window.gettingData = async (event, element) => {
+            event.preventDefault()
+            const thisparent = element.parentElement;
+            const thisIdElement = parent.children[0].innerHTML;
+            const thisUrlCrafting = "{% url 'past'%}" + `?id=${thisIdElement}`
+        }
+        
+        
+        if (weatherFlag && addressFlag) resolved();
+    }).then(
+        () => {
+            document.querySelector('.loadingScreen').style.display = 'none'
+            document.querySelector('.big-container').style.display = 'flex'
+        }
+    )
+</script>
 {% endblock body%}
+

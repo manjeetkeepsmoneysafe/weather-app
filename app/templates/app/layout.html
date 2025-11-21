@@ -16,6 +16,17 @@
         .hello {
             padding-top: 25px;
         }
+        .footer {
+            text-align: center;
+            padding-bottom: 10px;
+            min-height: 50vh
+        }
+        .footer > footer {
+            position: absolute;
+            bottom: 0;
+            left: 0; 
+            width: 100%;
+        }
     </style>
     {% block head %}
     {% endblock %}
@@ -27,6 +38,8 @@
         <p class="navbar-brand hello"><b>Hello, {{ user.username }}</b></p>
         <a href="{% url 'logout'%}" class="navbar-brand"> Log Out </a>
         <a href="{% url 'past'%}" class="navbar-brand"> Your history </a>
+        {% else %}
+        <a href="{% url 'create'%}" class="navbar-brand">Create a new user</a>
         {% endif %}
     </nav>
     <div class="body">

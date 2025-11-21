@@ -61,8 +61,9 @@
                     {{ i.date }} for {{ i.weatherInfo.pleaseWorkplease.city }}, {{ i.weatherInfo.pleaseWorkplease.countryName }}
                 </div>
                 <div class="uhhIDKwhattonamethis">
-                    <button class="btn btn-danger deletingThisData"> Delete this data </button>
-                    <button class="btn btn-primary goToThisData"> Go to this data </button>
+                    <div style="display: none;" class="id">{{ i.id }}</div>
+                    <button class="btn btn-danger deletingThisData" onclick="deletingData(event, this)"> Delete this data </button>
+                    <button class="btn btn-primary goToThisData" onclick="gettingData(event, this)"> Go to this data </button>
                 </div>
             </div>
             {% endfor%}
@@ -70,12 +71,16 @@
     </div>
 </div>
 <script>
+
     const loaded = new Promise(async function(resolved, reject) {
+
 
         const lo = '{{ longitude }}';
         const la = '{{ latitude }}';
         let weatherFlag = false;
         let addressFlag = false;
+        let api1Value;
+        let api2Value;
 
         document.querySelector('.big-container').style.display = 'none';
 
@@ -86,22 +91,7 @@
         const tempBt = document.querySelector('.temperatureButton');
         const windBt = document.querySelector('.windButton');
         const options = document.querySelector('.options');
-        const optionElements = options.children;
-        console.log(optionElements)
         
-        for (let i = 0; i < optionElements.length; i++) {
-            console.log(optionElements[i]);
-            const optionElementsElements = optionElements[i].children[1];
-            
-            optionElementsElements[0].addEventListener('click', async (event) => {
-
-            })
-            optionElementsElements[1].addEventListener('click', async (event) => {
-
-            })
-
-        }
-
         const rainBt = document.querySelector('.rainingButton');
         const humidBt = document.querySelector('.humidButton');
         const saveElement = document.querySelector('.add');
@@ -183,16 +173,15 @@
                 hideDivs(document.querySelector('#graphing-rain'))
                 showDivs(document.querySelector('#graphing-humid'))
             })
-            return res.json
-            
+            api1Value = res
         })
         .catch(err => {throw err})
         const address = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${la}&longitude=${lo}&localityLanguage=en`)
         .then(res => res.json())
         .then(response => {
-            console.log(response); 
             locationElement.innerHTML = `${response.city}, ${response.countryName}`;
             addressFlag = true;
+            api2Value = response
         })
 
         // django csrf doc
@@ -211,6 +200,34 @@
         return cookieValue;
         }
         const csrftoken = getCookie('csrftoken');
+        const optionElements = options.children;
+
+        
+        window.deletingData = async (event, element) => {
+            const parent = element.parentElement;
+            const idElement = parent.children[0].innerHTML
+            const urlCrafting = "{% url 'delete'%}" + `?id=${idElement}`
+            console.log(urlCrafting)
+            const info = await fetch(urlCrafting, {
+                method:"POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRFToken": csrftoken,
+                },
+                body: idElement,
+            })
+            window.location.reload();
+        }
+
+        window.gettingData = async (event, element) => {
+            event.preventDefault()
+            const thisparent = element.parentElement;
+            const thisIdElement = thisparent.children[0].innerHTML;
+            const thisUrlCrafting = "{% url 'past'%}" + `?id=${thisIdElement}`
+            window.location.href = thisUrlCrafting
+        }
+        
+
         submitElement.addEventListener('submit', async (event) => {
             event.preventDefault()
             const MAHHinfo = await fetch("{% url 'save' %}", {
@@ -219,9 +236,9 @@
                     "Content-Type": "application/json",
                     "X-CSRFToken": csrftoken,
                 },
-                body: JSON.stringify({plsWorkpls: info}, {pleaseWorkplease: address}),
+                body: JSON.stringify({plsWorkpls: api1Value, pleaseWorkplease: api2Value}),
             }).then (res => res.text())
-            console.log(MAHHinfo)
+            window.location.reload()
         })
         
         if (weatherFlag && addressFlag) resolved();

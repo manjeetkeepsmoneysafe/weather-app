@@ -22,17 +22,22 @@ def save(request):
 
 @login_required
 def delete(request):
-    data = json.loads(request.body)
-    user = User.objects.filter(username = request.user).first().data.delete(weatherInfo = data)
-    user.save()
+    id = request.body
+    l = request.user.data.get(id=id)
+    request.user.data.remove(l)
     return JsonResponse({
-        "message": "Gooood"
+        "message": "Goooddd"
     })
 
 
 @login_required
 def past(request):
-    pass
+    id = request.GET['id']
+    return render(request, "app/past.html", {
+        "dataSet": json.dumps(request.user.data.get(id=id).weatherInfo),
+        "date": request.user.data.get(id=id).date
+
+    })
 
 def loginView(request):
     if request.method == "POST":
